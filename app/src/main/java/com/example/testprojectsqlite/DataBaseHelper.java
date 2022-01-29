@@ -1,10 +1,15 @@
 package com.example.testprojectsqlite;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import androidx.annotation.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DataBaseHelper extends SQLiteOpenHelper {
 
@@ -30,5 +35,68 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
+    }
+
+    public boolean addOne(CustomerModel customerModel)
+    {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+
+        cv.put(COLUMN_CUSTOMER_NAME, customerModel.getName());
+        cv.put(COLUMN_CUSTOMER_AGE, customerModel.getAge());
+        cv.put(COLUMN_ACTIVE_CUSTOMER, customerModel.isActive());
+
+        long insert = db.insert(CUSTOMER_TABLE, null, cv);
+
+        if (insert == -1)
+        {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    public List<CustomerModel> getEveryone(){
+        List<CustomerModel> returnList = new ArrayList<>();
+
+        // get data from the database
+        String queryString = "SELECT * FROM " + CUSTOMER_TABLE;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor =  db.rawQuery(queryString, null);
+        if (cursor.moveToFirst()){
+            // loop through cursor (result set) and create new customer objects. Put them into the retrun list
+            do {
+                int customerId = cursor.getInt(0);
+                String customerName = cursor.getString(1);
+                int customerAge = cursor.getInt(2);
+                boolean isActive = cursor.getInt(3) == 0 ? false : true;
+                CustomerModel customerModel = new CustomerModel(customerId, customerName, customerAge, isActive);
+                returnList.add(customerModel);
+            } while (cursor.moveToNext());
+        }
+        else{
+            // failure. don't add anything to the list
+        }
+        // close both the cursor and the db when done
+        cursor.close();
+        db.close();
+
+        return returnList;
+    }
+
+    public boolean deleteOne(CustomerModel customerModel){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String queryString = "DELETE FROM " + CUSTOMER_TABLE + " WHERE " + COLUMN_ID + " = " + customerModel.getId();
+
+        Cursor cursor = db.rawQuery(queryString, null);
+
+        if (cursor.moveToFirst())
+        {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 }
